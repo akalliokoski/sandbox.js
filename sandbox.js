@@ -259,7 +259,7 @@ if(req.originalUrl.indexOf('launch')>0){
   //  here we receive events to publish
   publishWebsocket.on('message', function(msg) {
     console_log('Receiving event on Websocket: ' + msg);
-    sendEvents(JSON.parse(msg));
+    sendEvents(JSON.parse(msg), publishWebsocket);
   });
   
   publishWebsocket.on('close', function(msg) { 
@@ -268,7 +268,7 @@ if(req.originalUrl.indexOf('launch')>0){
   });
 });
 
-function sendEvents(notification){
+function sendEvents(notification, publishWebsocket = null){
   lastContext=notification.event['context'];  
   subscriptions.forEach(function(subscription) {
     if(subscription.events.includes(notification.event['hub.event'])) {
@@ -276,7 +276,8 @@ function sendEvents(notification){
       const hmac = crypto.createHmac('sha256',subscription.secret);
       hmac.update(JSON.stringify(notification));
       if (subscription.channel=='websocket') {
-        if (subscription.websocket.readyState==1)
+        if (subscription.websocket !== publishWebsocket &&
+            subscription.websocket.readyState==1)
         {
           subscription.websocket.send(JSON.stringify(notification));        
           console_log('📡HUB: Sent notification to websocket.'); 
